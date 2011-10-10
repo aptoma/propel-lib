@@ -22,7 +22,7 @@
  * @method     ModelCriteria innerJoin($relation) Adds a INNER JOIN clause to the query
  *
  * @author     François Zaninotto
- * @version    $Revision: 2262 $
+ * @version    $Revision$
  * @package    propel.runtime.query
  */
 class ModelCriteria extends Criteria
@@ -427,10 +427,10 @@ class ModelCriteria extends Criteria
 				$this->addGroupByColumn($column->getFullyQualifiedName());
 			}
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Adds a DISTINCT clause to the query
 	 * Alias for Criteria::setDistinct()
@@ -475,27 +475,27 @@ class ModelCriteria extends Criteria
 	}
 
 	/**
-	* Makes the ModelCriteria return a string, array, or PropelArrayCollection
-	* Examples:
-	*   ArticleQuery::create()->select('Name')->find();
-	*   => PropelArrayCollection Object ('Foo', 'Bar')
-	*
-	*   ArticleQuery::create()->select('Name')->findOne();
-	*   => string 'Foo'
-	*
-	*   ArticleQuery::create()->select(array('Id', 'Name'))->find();
-	*   => PropelArrayCollection Object (
-	*        array('Id' => 1, 'Name' => 'Foo'),
-	*        array('Id' => 2, 'Name' => 'Bar')
-	*      )
-	*
-	*   ArticleQuery::create()->select(array('Id', 'Name'))->findOne();
-	*   => array('Id' => 1, 'Name' => 'Foo')
-	*
-	* @param       mixed $columnArray A list of column names (e.g. array('Title', 'Category.Name', 'c.Content')) or a single column name (e.g. 'Name')
-	*
-	* @return     ModelCriteria The current object, for fluid interface
-	*/
+	 * Makes the ModelCriteria return a string, array, or PropelArrayCollection
+	 * Examples:
+	 *   ArticleQuery::create()->select('Name')->find();
+	 *   => PropelArrayCollection Object ('Foo', 'Bar')
+	 *
+	 *   ArticleQuery::create()->select('Name')->findOne();
+	 *   => string 'Foo'
+	 *
+	 *   ArticleQuery::create()->select(array('Id', 'Name'))->find();
+	 *   => PropelArrayCollection Object (
+	 *        array('Id' => 1, 'Name' => 'Foo'),
+	 *        array('Id' => 2, 'Name' => 'Bar')
+	 *      )
+	 *
+	 *   ArticleQuery::create()->select(array('Id', 'Name'))->findOne();
+	 *   => array('Id' => 1, 'Name' => 'Foo')
+	 *
+	 * @param     mixed $columnArray A list of column names (e.g. array('Title', 'Category.Name', 'c.Content')) or a single column name (e.g. 'Name')
+	 *
+	 * @return    ModelCriteria The current object, for fluid interface
+	 */
 	public function select($columnArray)
 	{
 		if (!count($columnArray) || $columnArray == '') {
@@ -514,6 +514,17 @@ class ModelCriteria extends Criteria
 		return $this;
 	}
 
+	/**
+	 * Retrieves the columns defined by a previous call to select().
+	 * @see       select()
+	 *
+	 * @return    array|string A list of column names (e.g. array('Title', 'Category.Name', 'c.Content')) or a single column name (e.g. 'Name')
+	 */
+	public function getSelect()
+	{
+		return $this->select;
+	}
+
 	protected function configureSelectColumns()
 	{
 		if (is_null($this->select)) {
@@ -530,14 +541,16 @@ class ModelCriteria extends Criteria
 		// We need to set the primary table name, since in the case that there are no WHERE columns
 		// it will be impossible for the BasePeer::createSelectSql() method to determine which
 		// tables go into the FROM clause.
-		$this->setPrimaryTableName(constant($this->modelPeerName . '::TABLE_NAME'));
+		if (!$this->selectQueries) {
+			$this->setPrimaryTableName(constant($this->modelPeerName . '::TABLE_NAME'));
+		}
 
 		// Add requested columns which are not withColumns
 		$columnNames = is_array($this->select) ? $this->select : array($this->select);
 		foreach ($columnNames as $columnName) {
 			// check if the column was added by a withColumn, if not add it
 			if (!array_key_exists($columnName, $this->getAsColumns())) {
-				$column = $this->getColumnFromName ($columnName);
+				$column = $this->getColumnFromName($columnName);
 				// always put quotes around the columnName to be safe, we strip them in the formatter
 				$this->addAsColumn('"' . $columnName . '"', $column[1]);
 			}
@@ -648,7 +661,7 @@ class ModelCriteria extends Criteria
 
 		return $this;
 	}
-	
+
 	/**
 	 * Add another condition to an already added join
 	 * @example
@@ -676,10 +689,10 @@ class ModelCriteria extends Criteria
 		$criterion = $this->getCriterionForClause($clause, $value);
 		$method = $operator === Criteria::LOGICAL_OR ? 'addOr' : 'addAnd';
 		$join->getJoinCondition()->$method($criterion);
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * Replace the condition of an already added join
 	 * @example
@@ -809,6 +822,21 @@ class ModelCriteria extends Criteria
 	public function getWith()
 	{
 		return $this->with;
+	}
+
+	/**
+	 * Sets the array of ModelWith specifying which objects must be hydrated
+	 * together with the main object.
+	 *
+	 * @param    array
+	 *
+	 * @return     ModelCriteria The current object, for fluid interface
+	 */
+	public function setWith($with)
+	{
+		$this->with = $with;
+
+		return $this;
 	}
 
 	public function isWithOneToMany()
@@ -950,15 +978,15 @@ class ModelCriteria extends Criteria
 	{
 		return $this->primaryCriteria;
 	}
-	
+
 	/**
 	 * Adds a Criteria as subQuery in the From Clause.
-	 * 
+	 *
 	 * @see Criteria::addSelectQuery()
 	 *
-	 * @param     Criteria $subQueryCriteria Criteria to build the subquery from  
+	 * @param     Criteria $subQueryCriteria Criteria to build the subquery from
 	 * @param     string   $alias            alias for the subQuery
-	 * @param     boolean  $addAliasAndSelectColumns Set to false if you want to manually add the aliased select columns 
+	 * @param     boolean  $addAliasAndSelectColumns Set to false if you want to manually add the aliased select columns
 	 *
 	 * @return ModelCriteria The current object, for fluid interface
 	 */
@@ -980,7 +1008,7 @@ class ModelCriteria extends Criteria
 		}
 		return $this;
 	}
-	
+
 	/**
 	 * Adds the select columns for a the current table
 	 *
@@ -1431,7 +1459,7 @@ class ModelCriteria extends Criteria
 		$criteria = $this->isKeepQuery() ? clone $this : $this;
 		$pager = new PropelModelPager($criteria, $maxPerPage);
 		$pager->setPage($page);
-		$pager->init();
+		$pager->init($con);
 
 		return $pager;
 	}
@@ -1663,7 +1691,7 @@ class ModelCriteria extends Criteria
 		} else {
 
 			// update rows in a single query
-			$set = new Criteria();
+			$set = new Criteria($this->getDbName());
 			foreach ($values as $columnName => $value) {
 				$realColumnName = $this->getTableMap()->getColumnByPhpName($columnName)->getFullyQualifiedName();
 				$set->add($realColumnName, $value);
@@ -1733,7 +1761,7 @@ class ModelCriteria extends Criteria
 		}
 		return $criterion;
 	}
-	
+
 	/**
 	 * Converts value for some column types
 	 *
@@ -1758,7 +1786,7 @@ class ModelCriteria extends Criteria
 				$value = $colMap->getValueSetKey($value);
 			}
 		}
-		
+
 		return $value;
 	}
 
@@ -1819,7 +1847,7 @@ class ModelCriteria extends Criteria
 		if ($stringToTransform) {
 			$parsedString .= preg_replace_callback('/\w+\.\w+/', array($this, 'doReplaceNameInExpression'), $stringToTransform);
 		}
-		
+
 		$clause = $parsedString;
 		return $this->foundMatch;
 	}
@@ -1925,7 +1953,7 @@ class ModelCriteria extends Criteria
 			throw new PropelException(sprintf('Unknown column "%s" in the subQuery with alias "%s"', $phpName, $class));
 		}
 	}
-	
+
 	/**
 	 * Return a fully qualified column name corresponding to a simple column phpName
 	 * Uses model alias if it exists
